@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export function RateLimitDialog() {
   const { showRateLimitDialog, closeRateLimitDialog } = useErrorStore();
 
-  const discordUrl = process.env.NEXT_PUBLIC_DISCORD_URL || "#";
+  const discordUrl = process.env.NEXT_PUBLIC_DISCORD_URL || "https://discordapp.com/users/1098901963330035843";
 
   return (
     <AnimatePresence>
