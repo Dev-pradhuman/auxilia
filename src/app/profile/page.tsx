@@ -5,14 +5,14 @@ import { AccessibleButton } from "@/components/ui/AccessibleButton";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { SignOutButton, SignedIn, useUser } from "@clerk/nextjs";
+import { SignOutButton, useUser } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 
 export default function ProfilePage() {
   const { profile, updateProfile } = useProfileStore();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
 
   useEffect(() => setMounted(true), []);
 
@@ -30,6 +30,8 @@ export default function ProfilePage() {
     { key: 'hapticFeedback', label: 'Haptic Feedback', desc: 'Provides physical feedback on interactions' },
   ] as const;
 
+  if (!mounted || !isLoaded) return null;
+
   return (
     <div className="flex flex-col px-6 pt-12 pb-32 space-y-10">
       <header className="space-y-2">
@@ -37,31 +39,29 @@ export default function ProfilePage() {
         <p className="text-xl text-muted-foreground font-medium">Customize Auxilia to work best for you.</p>
       </header>
 
-      {mounted && (
-        <section className="space-y-4">
-          <h2 className="text-2xl font-bold tracking-tight">Appearance</h2>
-          <div className="bg-card border border-border/50 rounded-3xl p-2 flex shadow-sm">
-            <button
-              onClick={() => setTheme('light')}
-              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl font-semibold transition-all ${theme === 'light' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-secondary'}`}
-            >
-              <Sun size={20} /> Light
-            </button>
-            <button
-              onClick={() => setTheme('dark')}
-              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl font-semibold transition-all ${theme === 'dark' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-secondary'}`}
-            >
-              <Moon size={20} /> Dark
-            </button>
-            <button
-              onClick={() => setTheme('system')}
-              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl font-semibold transition-all ${theme === 'system' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-secondary'}`}
-            >
-              <Monitor size={20} /> System
-            </button>
-          </div>
-        </section>
-      )}
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold tracking-tight">Appearance</h2>
+        <div className="bg-card border border-border/50 rounded-3xl p-2 flex shadow-sm">
+          <button
+            onClick={() => setTheme('light')}
+            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl font-semibold transition-all ${theme === 'light' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-secondary'}`}
+          >
+            <Sun size={20} /> Light
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl font-semibold transition-all ${theme === 'dark' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-secondary'}`}
+          >
+            <Moon size={20} /> Dark
+          </button>
+          <button
+            onClick={() => setTheme('system')}
+            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl font-semibold transition-all ${theme === 'system' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-secondary'}`}
+          >
+            <Monitor size={20} /> System
+          </button>
+        </div>
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight">Accessibility Features</h2>
@@ -103,7 +103,7 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      <SignedIn>
+      {isSignedIn && (
         <section className="pt-4">
           <SignOutButton>
             <AccessibleButton variant="destructive" size="lg" className="w-full text-lg gap-3">
@@ -112,7 +112,7 @@ export default function ProfilePage() {
             </AccessibleButton>
           </SignOutButton>
         </section>
-      </SignedIn>
+      )}
     </div>
   );
 }

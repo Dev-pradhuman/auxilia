@@ -5,19 +5,19 @@ import Link from "next/link";
 import { Eye, BookOpen, Ear, Mic, Brain, TriangleAlert, Clock, ArrowRight, Sparkles } from "lucide-react";
 import { useProfileStore } from "@/store/useProfileStore";
 import { AccessibleButton } from "@/components/ui/AccessibleButton";
-import { UserButton, useUser, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { UserButton, useUser, SignInButton } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 
 export default function Home() {
   const { profile } = useProfileStore();
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || !isLoaded) return null;
 
   const coreTools = [
     { label: "See", icon: Eye, href: "/see", desc: "Understand your surroundings" },
@@ -56,16 +56,15 @@ export default function Home() {
           </motion.div>
         </div>
         <div className="shadow-lg rounded-full shrink-0 border border-border/50">
-          <SignedIn>
+          {isSignedIn ? (
             <UserButton appearance={{ elements: { userButtonAvatarBox: "w-12 h-12" } }} />
-          </SignedIn>
-          <SignedOut>
+          ) : (
             <SignInButton mode="modal">
               <AccessibleButton variant="secondary" size="icon" className="w-12 h-12 rounded-full">
                 <Sparkles size={20} />
               </AccessibleButton>
             </SignInButton>
-          </SignedOut>
+          )}
         </div>
       </header>
 
