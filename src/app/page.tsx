@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, BookOpen, Ear, Mic, Brain, TriangleAlert, Clock, ArrowRight } from "lucide-react";
+import { Eye, BookOpen, Ear, Mic, Brain, TriangleAlert, Clock, ArrowRight, Sparkles } from "lucide-react";
 import { useProfileStore } from "@/store/useProfileStore";
 import { AccessibleButton } from "@/components/ui/AccessibleButton";
+import { UserButton, useUser, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { motion } from "framer-motion";
 
 export default function Home() {
-  const { profile, hasCompletedOnboarding } = useProfileStore();
+  const { profile } = useProfileStore();
+  const { user } = useUser();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -15,9 +18,6 @@ export default function Home() {
   }, []);
 
   if (!mounted) return null;
-
-  // Ideally, if !hasCompletedOnboarding, we redirect to /onboarding or show onboarding.
-  // For the hackathon, we'll assume they can access tools immediately and configure in /profile.
 
   const coreTools = [
     { label: "See", icon: Eye, href: "/see", desc: "Understand your surroundings" },
@@ -28,64 +28,118 @@ export default function Home() {
     { label: "Help", icon: TriangleAlert, href: "/help", desc: "Emergency & assistance", variant: "destructive" as const },
   ];
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="flex flex-col px-6 pt-12 pb-24 max-w-2xl mx-auto space-y-10">
+    <div className="flex flex-col px-6 pt-12 pb-32 space-y-12">
       
-      <header className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">Good morning.</h1>
-        <p className="text-xl text-muted-foreground font-medium">What do you need help with?</p>
+      <header className="flex items-center justify-between">
+        <div className="space-y-1">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+            <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
+              Good morning{user ? `, ${user.firstName}` : ''}.
+            </h1>
+            <p className="text-xl text-muted-foreground font-medium mt-1">What do you need help with?</p>
+          </motion.div>
+        </div>
+        <div className="shadow-lg rounded-full shrink-0 border border-border/50">
+          <SignedIn>
+            <UserButton appearance={{ elements: { userButtonAvatarBox: "w-12 h-12" } }} />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <AccessibleButton variant="secondary" size="icon" className="w-12 h-12 rounded-full">
+                <Sparkles size={20} />
+              </AccessibleButton>
+            </SignInButton>
+          </SignedOut>
+        </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-4">
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-2 gap-4"
+      >
         {coreTools.map((tool) => (
-          <Link key={tool.label} href={tool.href} className="w-full">
-            <AccessibleButton
-              variant={tool.variant || "card"}
-              className={`w-full h-40 ${tool.variant === 'destructive' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-transparent shadow-md' : ''}`}
-              aria-label={`Open ${tool.label} tool. ${tool.desc}`}
-            >
-              <tool.icon size={48} strokeWidth={1.5} aria-hidden="true" />
-              <span className="text-xl mt-2 font-semibold tracking-wide">{tool.label}</span>
-            </AccessibleButton>
-          </Link>
+          <motion.div variants={item} key={tool.label}>
+            <Link href={tool.href} className="block w-full">
+              <AccessibleButton
+                variant={tool.variant || "card"}
+                className={`w-full h-44 ${tool.variant === 'destructive' ? 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive hover:text-white' : ''}`}
+                aria-label={`Open ${tool.label} tool. ${tool.desc}`}
+              >
+                <div className={`p-4 rounded-full mb-2 ${tool.variant === 'destructive' ? 'bg-destructive/20' : 'bg-primary/5 text-primary'}`}>
+                  <tool.icon size={36} strokeWidth={2} aria-hidden="true" />
+                </div>
+                <span className="text-xl font-bold tracking-wide">{tool.label}</span>
+              </AccessibleButton>
+            </Link>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      <section className="space-y-4">
-        <h2 className="text-2xl font-bold">Quick Actions</h2>
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="space-y-5"
+      >
+        <h2 className="text-2xl font-bold tracking-tight">Quick Actions</h2>
         <div className="flex flex-col gap-3">
-          <AccessibleButton variant="secondary" size="lg" className="justify-start gap-4 w-full">
-            <Eye className="text-primary" />
-            <span className="flex-1 text-left">Describe what's in front of me</span>
-            <ArrowRight size={20} className="text-muted-foreground" />
+          <AccessibleButton variant="secondary" size="lg" className="justify-start gap-5 w-full h-16 group">
+            <div className="p-2 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+              <Eye size={20} />
+            </div>
+            <span className="flex-1 text-left font-semibold">Describe my surroundings</span>
+            <ArrowRight size={20} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
           </AccessibleButton>
-          <AccessibleButton variant="secondary" size="lg" className="justify-start gap-4 w-full">
-            <BookOpen className="text-primary" />
-            <span className="flex-1 text-left">Read the nearest text</span>
-            <ArrowRight size={20} className="text-muted-foreground" />
-          </AccessibleButton>
-          <AccessibleButton variant="secondary" size="lg" className="justify-start gap-4 w-full">
-            <Ear className="text-primary" />
-            <span className="flex-1 text-left">Start live captions</span>
-            <ArrowRight size={20} className="text-muted-foreground" />
+          <AccessibleButton variant="secondary" size="lg" className="justify-start gap-5 w-full h-16 group">
+            <div className="p-2 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+              <BookOpen size={20} />
+            </div>
+            <span className="flex-1 text-left font-semibold">Read the nearest text</span>
+            <ArrowRight size={20} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
           </AccessibleButton>
         </div>
-      </section>
+      </motion.section>
 
-      <section className="space-y-4">
-        <h2 className="text-2xl font-bold">Recent</h2>
-        <div className="bg-secondary/50 rounded-2xl p-6 flex flex-col gap-4 border border-border">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-full text-primary">
-              <Clock size={24} />
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="space-y-5"
+      >
+        <h2 className="text-2xl font-bold tracking-tight">Recent</h2>
+        <div className="bg-card rounded-3xl p-6 flex flex-col gap-4 border border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.02)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Clock size={100} />
+          </div>
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="bg-primary/10 p-4 rounded-2xl text-primary">
+              <Clock size={28} />
             </div>
             <div>
-              <p className="font-semibold text-lg">Translation</p>
-              <p className="text-muted-foreground">"Where is the accessible entrance?"</p>
+              <p className="font-bold text-xl">Translation</p>
+              <p className="text-muted-foreground mt-1 font-medium">"Where is the accessible entrance?"</p>
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
     </div>
   );
