@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Auxilia
 
-## Getting Started
+Auxilia is an accessibility companion application developed for the AppX accessibility competition. It combines several assistive tools into a single, context-aware interface.
 
-First, run the development server:
+## Overview
+
+Accessibility currently depends on having the right tool at the right time. Auxilia combines essential capabilities—vision assistance, reading, captioning, communication, and simplification—into one application to reduce the need to switch between separate tools.
+
+## Features
+
+- **Adaptive Home:** Surafces immediate, actionable tools based on past usage and settings.
+- **See Mode:** Camera-first visual assistance for describing environments and recognizing objects.
+- **Read Mode:** OCR combined with Text-to-Speech (TTS) for reading text.
+- **Understand Mode:** Uses AI to simplify complex instructions into step-by-step guides or key points.
+- **Hear Mode:** Real-time captioning and environmental sound awareness.
+- **Speak Mode:** Augmentative and Alternative Communication (AAC) with quick phrases and typing.
+- **Help Mode:** Emergency assistance with explicit user confirmation requirements.
+
+## Architecture
+
+- **Framework:** Next.js (App Router) with React
+- **Styling:** Tailwind CSS with CSS Variables for high-contrast theming
+- **State Management:** Zustand for persistent accessibility preferences
+- **Icons:** Lucide React
+- **AI Abstraction:** Replaceable AI service layers located in `src/services/ai.ts`
+
+## Privacy
+
+- Clear indicators for camera and microphone usage
+- No background recording of conversations or location data
+- Explicit user controls for saved information
+
+## Installation
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000` to view the application in the browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Limitations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Mock AI:** The application currently uses simulated AI delays (Demo Mode) to demonstrate the architecture without requiring external API keys during hackathon judging.
+- **Future Integration:** The `ai.ts` adapters are designed to be connected to production providers (e.g., OpenAI, Google Cloud Vision, or on-device WebNN models).
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Additional documentation is available in the `/docs` directory.
