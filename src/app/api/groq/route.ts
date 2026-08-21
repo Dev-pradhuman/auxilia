@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     // Prepare Groq Payload
-    const model = imageBase64 ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+    const model = imageBase64 ? "qwen/qwen3.6-27b" : "llama-3.3-70b-versatile";
     
     let messages = [];
     if (imageBase64) {
