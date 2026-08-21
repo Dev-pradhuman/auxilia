@@ -40,21 +40,48 @@ export const visionService = {
 export const ocrService = {
   extractText: async (imageSource: string | File | HTMLVideoElement): Promise<string> => {
     try {
-      let src = imageSource;
+      let base64 = "";
+      
       if (imageSource instanceof HTMLVideoElement) {
         const canvas = document.createElement('canvas');
-        canvas.width = imageSource.videoWidth;
-        canvas.height = imageSource.videoHeight;
+        const scale = Math.min(1, 800 / Math.max(imageSource.videoWidth, imageSource.videoHeight));
+        canvas.width = imageSource.videoWidth * scale;
+        canvas.height = imageSource.videoHeight * scale;
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error("Could not get canvas context");
         ctx.drawImage(imageSource, 0, 0, canvas.width, canvas.height);
-        src = canvas.toDataURL('image/png');
+        base64 = canvas.toDataURL('image/jpeg', 0.8);
+      } else if (imageSource instanceof File) {
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(imageSource);
+        });
+      } else {
+        base64 = imageSource;
       }
       
-      const { data: { text } } = await Tesseract.recognize(src as any, 'eng');
-      return text.trim() || "No text could be found in the image.";
+      const res = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          imageBase64: base64, 
+          prompt: "Extract all the text from this image perfectly. Do not include any conversational filler, markdown formatting, or explanations. Only return the exact text you see. If there is absolutely no text, return 'No text found'." 
+        })
+      });
+
+      if (res.status === 429) {
+        useErrorStore.getState().triggerRateLimitError();
+        throw new Error("RATE_LIMIT_REACHED");
+      }
+      if (!res.ok) throw new Error("Failed to extract text.");
+
+      const data = await res.json();
+      return data.result.trim() || "No text could be found in the image.";
     } catch (e) {
       console.error(e);
+      if (e instanceof Error && e.message === "RATE_LIMIT_REACHED") throw e;
       throw new Error("OCR failed. Please try again with a clearer image.");
     }
   },
