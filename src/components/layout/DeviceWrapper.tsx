@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTheme } from "next-themes";
 import { Monitor, Smartphone, Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
+import { RateLimitDialog } from "@/components/layout/RateLimitDialog";
 
 export function DeviceWrapper({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(true);
@@ -11,6 +12,7 @@ export function DeviceWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4 lg:p-8 transition-colors duration-500">
+      <RateLimitDialog />
       
       {/* External Controls for Judges/Users */}
       <div className="fixed top-6 left-6 z-[100] flex flex-col gap-4 bg-background/80 backdrop-blur-md border border-border p-4 rounded-3xl shadow-2xl">

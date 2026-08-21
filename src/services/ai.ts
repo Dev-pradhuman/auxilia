@@ -1,17 +1,39 @@
 import Tesseract from 'tesseract.js';
+import { useErrorStore } from '@/store/useErrorStore';
 
 export const visionService = {
   analyzeImage: async (imageData: string | HTMLVideoElement, prompt?: string): Promise<string> => {
-    // In a real app this would go to a VLM (Vision Language Model).
-    // For this demonstration without API keys, we still mock the VLM part, 
-    // but the OCR and audio systems are fully real.
-    await new Promise((r) => setTimeout(r, 1500));
     
-    if (prompt?.toLowerCase().includes("near me")) {
-      return "You are in a well-lit hallway. Ahead is a door labeled 'Restroom'. To your right is a drinking fountain.";
+    let base64 = imageData as string;
+    
+    if (imageData instanceof HTMLVideoElement) {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1, 800 / Math.max(imageData.videoWidth, imageData.videoHeight));
+      canvas.width = imageData.videoWidth * scale;
+      canvas.height = imageData.videoHeight * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Could not get canvas context");
+      ctx.drawImage(imageData, 0, 0, canvas.width, canvas.height);
+      base64 = canvas.toDataURL('image/jpeg', 0.8);
     }
 
-    return "I see a classroom entrance. There are three people talking near a wooden desk, and a sign on the wall next to the doorway.";
+    const res = await fetch('/api/groq', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        imageBase64: base64, 
+        prompt: prompt || "Describe the key elements in this environment clearly for someone with visual impairment." 
+      })
+    });
+
+    if (res.status === 429) {
+      useErrorStore.getState().triggerRateLimitError();
+      throw new Error("RATE_LIMIT_REACHED");
+    }
+    if (!res.ok) throw new Error("Failed to analyze image.");
+
+    const data = await res.json();
+    return data.result;
   },
 };
 
@@ -80,14 +102,29 @@ export const translationService = {
 
 export const simplificationService = {
   simplifyText: async (text: string, mode: 'SIMPLE' | 'STEP_BY_STEP' | 'KEY_POINTS'): Promise<string> => {
-    await new Promise((r) => setTimeout(r, 1500));
+    let prompt = "";
     if (mode === 'STEP_BY_STEP') {
-      return "1. Process started.\n2. Simplification applied.\n3. Output generated.";
+      prompt = `Turn the following complex text into a simple step-by-step guide with numbered bullet points:\n\n${text}`;
+    } else if (mode === 'KEY_POINTS') {
+      prompt = `Extract the most important key points from the following text as a short bulleted list:\n\n${text}`;
+    } else {
+      prompt = `Explain the following complex text in extremely simple, easy to understand language for a beginner:\n\n${text}`;
     }
-    if (mode === 'KEY_POINTS') {
-      return "• Point A\n• Point B";
+
+    const res = await fetch('/api/groq', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, mode: 'UNDERSTAND' })
+    });
+
+    if (res.status === 429) {
+      useErrorStore.getState().triggerRateLimitError();
+      throw new Error("RATE_LIMIT_REACHED");
     }
-    return "This is a simplified version of the text.";
+    if (!res.ok) throw new Error("Failed to simplify text.");
+
+    const data = await res.json();
+    return data.result;
   }
 };
 
