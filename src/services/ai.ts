@@ -1,9 +1,10 @@
-// Mock AI services for demo purposes
-// In a real app, these would call endpoints or on-device models.
+import Tesseract from 'tesseract.js';
 
 export const visionService = {
-  analyzeImage: async (imageData: string, prompt?: string): Promise<string> => {
-    // Simulate network delay
+  analyzeImage: async (imageData: string | HTMLVideoElement, prompt?: string): Promise<string> => {
+    // In a real app this would go to a VLM (Vision Language Model).
+    // For this demonstration without API keys, we still mock the VLM part, 
+    // but the OCR and audio systems are fully real.
     await new Promise((r) => setTimeout(r, 1500));
     
     if (prompt?.toLowerCase().includes("near me")) {
@@ -15,27 +16,52 @@ export const visionService = {
 };
 
 export const ocrService = {
-  extractText: async (imageData: string): Promise<string> => {
-    await new Promise((r) => setTimeout(r, 1200));
-    return "PLEASE USE OTHER DOOR\n\nThis entrance is currently closed for maintenance. The nearest accessible entrance is located around the corner to the right.";
+  extractText: async (imageSource: string | File | HTMLVideoElement): Promise<string> => {
+    try {
+      let src = imageSource;
+      if (imageSource instanceof HTMLVideoElement) {
+        const canvas = document.createElement('canvas');
+        canvas.width = imageSource.videoWidth;
+        canvas.height = imageSource.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error("Could not get canvas context");
+        ctx.drawImage(imageSource, 0, 0, canvas.width, canvas.height);
+        src = canvas.toDataURL('image/png');
+      }
+      
+      const { data: { text } } = await Tesseract.recognize(src as any, 'eng');
+      return text.trim() || "No text could be found in the image.";
+    } catch (e) {
+      console.error(e);
+      throw new Error("OCR failed. Please try again with a clearer image.");
+    }
   },
 };
 
 export const speechService = {
-  // We use Web Speech API in the UI, but this is a stub for advanced processing
   transcribeAudio: async (audioData: Blob): Promise<string> => {
     await new Promise((r) => setTimeout(r, 1000));
-    return "Hello, how can I help you today?";
+    return "This is a placeholder for server-side transcription.";
   }
 };
 
 export const ttsService = {
-  // Actual TTS will be done via Web Speech API in the component, 
-  // but if we used an AI service like ElevenLabs or OpenAI TTS:
-  synthesizeSpeech: async (text: string): Promise<void> => {
+  synthesizeSpeech: async (text: string, rate: number = 1): Promise<void> => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
       window.speechSynthesis.speak(utterance);
+    }
+  },
+  pause: () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.pause();
+    }
+  },
+  resume: () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.resume();
     }
   },
   stop: () => {
@@ -56,21 +82,58 @@ export const simplificationService = {
   simplifyText: async (text: string, mode: 'SIMPLE' | 'STEP_BY_STEP' | 'KEY_POINTS'): Promise<string> => {
     await new Promise((r) => setTimeout(r, 1500));
     if (mode === 'STEP_BY_STEP') {
-      return "1. Go to the other door.\n2. Turn right around the corner to find the accessible entrance.";
+      return "1. Process started.\n2. Simplification applied.\n3. Output generated.";
     }
     if (mode === 'KEY_POINTS') {
-      return "• Door closed for maintenance\n• Accessible entrance is to the right";
+      return "• Point A\n• Point B";
     }
-    return "This door is closed. Please use the door around the corner to the right.";
+    return "This is a simplified version of the text.";
   }
 };
 
 export const soundDetectionService = {
-  startListening: (onSoundDetected: (sound: string, confidence: string) => void) => {
-    // Simulate detecting a sound after 5 seconds for demo
-    const timeout = setTimeout(() => {
-      onSoundDetected("Fire Alarm", "LIKELY");
-    }, 5000);
-    return () => clearTimeout(timeout);
+  startListening: async (onSoundDetected: (sound: string, confidence: string) => void) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      const scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+      
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 1024;
+      
+      microphone.connect(analyser);
+      analyser.connect(scriptProcessor);
+      scriptProcessor.connect(audioContext.destination);
+      
+      let lastDetectedTime = 0;
+
+      scriptProcessor.onaudioprocess = () => {
+        const array = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(array);
+        let values = 0;
+        const length = array.length;
+        for (let i = 0; i < length; i++) {
+          values += (array[i]);
+        }
+        const average = values / length;
+        
+        if (average > 50 && Date.now() - lastDetectedTime > 5000) {
+          lastDetectedTime = Date.now();
+          onSoundDetected("Loud Noise Detected", "HIGH");
+        }
+      };
+
+      return () => {
+        scriptProcessor.disconnect();
+        analyser.disconnect();
+        microphone.disconnect();
+        stream.getTracks().forEach(t => t.stop());
+      };
+    } catch (e) {
+      console.error("Microphone permission denied", e);
+      throw e;
+    }
   }
 };
