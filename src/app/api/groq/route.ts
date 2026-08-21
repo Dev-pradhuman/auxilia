@@ -70,7 +70,12 @@ export async function POST(req: Request) {
         if (!res.ok) {
           const err = await res.text();
           console.error(`Groq API Error on Key ${i + 1}:`, err);
-          continue; // Fallback on other errors too, just in case
+          
+          // If we are on the last key, return the actual error so the frontend can see it
+          if (i === keys.length - 1) {
+            return NextResponse.json({ error: `Groq API Error: ${res.status} - ${err}` }, { status: res.status });
+          }
+          continue; 
         }
 
         const data = await res.json();
@@ -78,15 +83,17 @@ export async function POST(req: Request) {
         
       } catch (e) {
         console.error(`Network error on Key ${i + 1}`, e);
+        if (i === keys.length - 1) {
+           return NextResponse.json({ error: `Network fetch failed: ${e}` }, { status: 500 });
+        }
         continue;
       }
     }
 
-    // If we exit the loop, all keys failed (likely 429 Rate Limit)
     return NextResponse.json({ error: "RATE_LIMIT_REACHED" }, { status: 429 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Server error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 });
   }
 }

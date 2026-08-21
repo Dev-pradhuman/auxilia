@@ -75,13 +75,16 @@ export const ocrService = {
         useErrorStore.getState().triggerRateLimitError();
         throw new Error("RATE_LIMIT_REACHED");
       }
-      if (!res.ok) throw new Error("Failed to extract text.");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server returned ${res.status}`);
+      }
 
       const data = await res.json();
       return data.result.trim() || "No text could be found in the image.";
     } catch (e) {
       console.error(e);
-      if (e instanceof Error && e.message === "RATE_LIMIT_REACHED") throw e;
+      if (e instanceof Error) throw e;
       throw new Error("OCR failed. Please try again with a clearer image.");
     }
   },
