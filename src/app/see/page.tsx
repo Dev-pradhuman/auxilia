@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CameraOverlay } from "@/components/ui/CameraOverlay";
 import { AccessibleButton } from "@/components/ui/AccessibleButton";
 import { visionService, ttsService } from "@/services/ai";
@@ -12,12 +12,16 @@ export default function SeeModePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const { profile } = useProfileStore();
+  const cameraRef = useRef<any>(null);
 
   const handleAction = async (prompt?: string) => {
     setLoading(true);
     setResult(null);
     try {
-      const description = await visionService.analyzeImage("mock-image-data", prompt);
+      const video = cameraRef.current?.getVideoElement();
+      if (!video) throw new Error("Camera not ready.");
+      
+      const description = await visionService.analyzeImage(video, prompt);
       setResult(description);
       if (profile.voiceFeedback) {
         ttsService.synthesizeSpeech(description);
@@ -30,7 +34,7 @@ export default function SeeModePage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] px-4 pt-4 pb-6 max-w-2xl mx-auto">
+    <div className="flex flex-col h-full px-4 pt-4 pb-6 max-w-2xl mx-auto">
       <header className="flex items-center gap-4 mb-4">
         <Link href="/">
           <AccessibleButton variant="ghost" size="icon" aria-label="Go back">
@@ -41,7 +45,7 @@ export default function SeeModePage() {
       </header>
 
       <div className="flex-1 relative flex flex-col gap-4">
-        <CameraOverlay className="flex-1 w-full" />
+        <CameraOverlay ref={cameraRef} className="flex-1 w-full shadow-lg" />
         
         {loading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-3xl">
