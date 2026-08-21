@@ -21,7 +21,7 @@ export function BottomNavigation() {
   ];
 
   return (
-    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass rounded-full px-2 py-2 z-50 flex items-center justify-between">
+    <nav className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass rounded-full px-2 py-2 z-50 flex items-center justify-between">
       {navItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
         const Icon = item.icon;

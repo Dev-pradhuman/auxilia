@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppProvider } from "@/components/layout/AppProvider";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { DeviceWrapper } from "@/components/layout/DeviceWrapper";
 import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,17 +25,17 @@ export default function RootLayout({
         <body className={`${inter.className} min-h-screen flex flex-col antialiased selection:bg-primary/20`}>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="light"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <AppProvider>
-              <div className="flex-1 relative flex flex-col max-w-md mx-auto w-full bg-background shadow-2xl min-h-screen">
-                <main className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
+              <DeviceWrapper>
+                <main className="flex-1 overflow-y-auto pb-28 custom-scrollbar relative z-10 h-full">
                   {children}
                 </main>
                 <BottomNavigation />
-              </div>
+              </DeviceWrapper>
             </AppProvider>
           </ThemeProvider>
         </body>
