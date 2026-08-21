@@ -79,7 +79,9 @@ export async function POST(req: Request) {
         }
 
         const data = await res.json();
-        return NextResponse.json({ result: data.choices[0].message.content });
+        const rawText = data.choices[0].message.content || "";
+        const cleanedText = rawText.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
+        return NextResponse.json({ result: cleanedText });
         
       } catch (e) {
         console.error(`Network error on Key ${i + 1}`, e);
